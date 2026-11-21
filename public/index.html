@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS S3 File Upload</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f5f9;
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 35px;
+            max-width: 400px;
+            margin: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px #ddd;
+        }
+
+        h2 {
+            color: #222;
+        }
+
+        input {
+            margin: 20px 0;
+        }
+
+        button {
+            background-color: #ff9900;
+            color: black;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #e68a00;
+        }
+
+        #message {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>AWS S3 File Upload</h2>
+
+        <p>Select a file to upload</p>
+
+        <input type="file" id="file">
+
+        <br>
+
+       <button type="button" onclick="uploadFile()">
+    Upload File
+</button>
+        <p id="message"></p>
+
+    </div>
+
+
+    <script>
+async function uploadFile() {
+
+    const file = document.getElementById("file").files[0];
+    const message = document.getElementById("message");
+
+    if (!file) {
+        message.textContent = "Please select a file.";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    message.textContent = "Uploading...";
+
+    try {
+        const response = await fetch("/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message);
+        }
+
+        message.textContent = result.message;
+
+    } catch (error) {
+        message.textContent = error.message;
+    }
+}
+</script>
+</body>
+</html>
