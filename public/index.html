@@ -4,107 +4,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>AWS S3 File Upload</title>
 
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f2f5f9;
+            background-color: #f0f5ff;
             text-align: center;
-            padding: 80px 20px;
+            margin: 0;
+            padding: 50px 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .aws {
+            font-size: 45px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 38px;
+            color: #101f38;
+            margin: 15px 0;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #45556f;
+            margin-bottom: 25px;
         }
 
         .container {
-            background: white;
-            padding: 35px;
-            max-width: 400px;
+            background-color: white;
+            max-width: 850px;
             margin: auto;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px #d4deef;
+        }
+
+        .upload-box {
+            border: 2px dashed #b6c9e8;
             border-radius: 10px;
-            box-shadow: 0 4px 12px #ddd;
+            padding: 30px;
+            margin-bottom: 25px;
         }
 
-        h2 {
-            color: #222;
+        .upload-icon {
+            font-size: 55px;
+            color: #2879e8;
         }
 
-        input {
-            margin: 20px 0;
+        .upload-box h2 {
+            margin: 10px 0;
+            color: #101f38;
+        }
+
+        .upload-box p {
+            color: #45556f;
+        }
+
+        input[type="file"] {
+            margin-top: 15px;
+            max-width: 100%;
         }
 
         button {
-            background-color: #ff9900;
-            color: black;
+            background-color: #1671e8;
+            color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 5px;
+            padding: 15px 60px;
+            border-radius: 10px;
+            font-size: 18px;
             cursor: pointer;
-            font-weight: bold;
         }
 
         button:hover {
-            background-color: #e68a00;
+            background-color: #0759c5;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         #message {
-            margin-top: 20px;
+            margin: 25px auto 0;
+            max-width: 850px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .success {
+            background-color: #e5ffed;
+            color: #168331;
+            border: 1px solid #65d989;
+        }
+
+        .error {
+            background-color: #ffeaea;
+            color: #c62828;
+            border: 1px solid #ef9999;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 27px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            button {
+                padding: 12px 35px;
+            }
         }
     </style>
 </head>
 
 <body>
 
+    <div class="aws">aws ☁</div>
+
+    <h1>AWS S3 File Upload</h1>
+
+    <p class="subtitle">
+        Select a file to upload to Amazon S3 securely
+    </p>
+
     <div class="container">
 
-        <h2>AWS S3 File Upload</h2>
+        <form id="uploadForm">
 
-        <p>Select a file to upload</p>
+            <div class="upload-box">
 
-        <input type="file" id="file">
+                <div class="upload-icon">⇧</div>
 
-        <br>
+                <h2>Choose a file</h2>
 
-       <button type="button" onclick="uploadFile()">
-    Upload File
-</button>
-        <p id="message"></p>
+                <p>Supports: JPG, PNG, PDF (Max size: 5 MB)</p>
+
+                <input
+                    type="file"
+                    id="file"
+                    name="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    required
+                >
+
+            </div>
+
+            <button type="submit" id="uploadBtn">
+                ☁ Upload File
+            </button>
+
+        </form>
 
     </div>
 
+    <div id="message"></div>
 
     <script>
-async function uploadFile() {
 
-    const file = document.getElementById("file").files[0];
-    const message = document.getElementById("message");
+        const form = document.getElementById("uploadForm");
+        const message = document.getElementById("message");
+        const button = document.getElementById("uploadBtn");
 
-    if (!file) {
-        message.textContent = "Please select a file.";
-        return;
-    }
+        form.addEventListener("submit", async function(e) {
 
-    const formData = new FormData();
-    formData.append("file", file);
+            e.preventDefault();
 
-    message.textContent = "Uploading...";
+            const file = document.getElementById("file").files[0];
 
-    try {
-        const response = await fetch("/upload", {
-            method: "POST",
-            body: formData
+            if (!file) {
+                showMessage("Please select a file.", false);
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage("File size must be under 5 MB.", false);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            button.disabled = true;
+            button.textContent = "Uploading...";
+
+            showMessage("Please wait, uploading your file...", true);
+
+            try {
+
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message);
+                }
+
+                showMessage(
+                    "✓ File uploaded successfully! File Name: " +
+                    result.fileName,
+                    true
+                );
+
+                form.reset();
+
+            } catch (error) {
+
+                showMessage(error.message, false);
+
+            } finally {
+
+                button.disabled = false;
+                button.textContent = "☁ Upload File";
+
+            }
+
         });
 
-        const result = await response.json();
+        function showMessage(text, success) {
 
-        if (!response.ok) {
-            throw new Error(result.message);
+            message.style.display = "block";
+            message.className = success ? "success" : "error";
+            message.textContent = text;
+
         }
 
-        message.textContent = result.message;
+    </script>
 
-    } catch (error) {
-        message.textContent = error.message;
-    }
-}
-</script>
 </body>
 </html>
